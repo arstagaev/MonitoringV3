@@ -56,4 +56,8 @@ object Variables {
     var logCat = mutableStateListOf<String>("")
     var chatCanva = mutableStateListOf<String>()
 
+
+    // Analysis
+    var analysisParameters = mutableStateListOf<AnalysisBlock>()
+    data class AnalysisBlock(val name: String, var value: Double)
 }

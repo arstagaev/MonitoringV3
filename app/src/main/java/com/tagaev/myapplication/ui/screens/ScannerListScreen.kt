@@ -81,66 +81,6 @@ fun BLEDeviceListScreen(
     val bleDevices = mapScannedDevicesToBLEDevices(scannedDevices)
 
     Column {
-        LazyRow(
-            modifier = Modifier.fillMaxWidth().background(Color.DarkGray),
-            horizontalArrangement = Arrangement.spacedBy(8.dp) // adds 8.dp space between items
-        ) {
-            item {
-                Box(
-                    Modifier.width(150.dp).height(60.dp)
-                        .background(Color.Blue, shape = RoundedCornerShape(10.dp))
-                        .padding(horizontal = 2.dp)
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    Text("Min: \n${measureMinX.value.toInt()};${measureMinY.value.toInt()};${measureMinZ.value.toInt()}",
-                        fontSize = TextUnit(12f, TextUnitType.Sp),
-                        color = Color.White
-                    )
-                }
-            }
-
-            item {
-                Box(
-                    Modifier.width(150.dp).height(60.dp)
-                        .background(Color.Blue, shape = RoundedCornerShape(10.dp))
-                        .padding(horizontal = 2.dp)
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    Text("Avg: \n${measureAverageX.value.toInt()};${measureAverageY.value.toInt()};${measureAverageZ.value.toInt()}",
-                        fontSize = TextUnit(12f, TextUnitType.Sp),
-                        color = Color.White
-                    )
-                }
-            }
-
-            item {
-                Box(
-                    Modifier.width(150.dp).height(60.dp)
-                        .background(Color.Blue, shape = RoundedCornerShape(10.dp))
-                        .padding(horizontal = 2.dp)
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    Text("Max: \n${measureMaxX.value.toInt()};${measureMaxY.value.toInt()};${measureMaxZ.value.toInt()}",
-                        fontSize = TextUnit(12f, TextUnitType.Sp),
-                        color = Color.White
-                    )
-                }
-            }
-
-            item {
-                Box(
-                    Modifier.width(150.dp)
-                        .background(Color.Blue, shape = RoundedCornerShape(20.dp))
-                        .padding(horizontal = 2.dp)
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    Text("Packets: \n${countPacketsPerSecond.value}/$allPackets",
-                        fontSize = TextUnit(12f, TextUnitType.Sp),
-                        color = Color.White
-                    )
-                }
-            }
-        }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(bleDevices) { device ->
                 BLEDeviceItem(device = device, onConnectClicked = onConnectClicked)

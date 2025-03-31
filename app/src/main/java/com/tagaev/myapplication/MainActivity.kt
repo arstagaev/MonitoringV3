@@ -11,6 +11,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsEndWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -77,7 +79,9 @@ import com.tagaev.myapplication.ui.screens.BLEDeviceListScreen
 import com.tagaev.myapplication.ui.screens.ChartScreen
 import com.tagaev.myapplication.ui.screens.MissingPermissionsComponent
 import com.tagaev.myapplication.ui.screens.Screen.*
+import com.tagaev.myapplication.ui.theme.ColorBackground1
 import com.tagaev.myapplication.ui.theme.MonitoringV3Theme
+import com.tagaev.myapplication.ui.theme.textWhiterColor2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -103,17 +107,18 @@ class MainActivity : ComponentActivity() {
         }
 
         //////DEMOOO
-//        corScope.launch {
-//            BLEStarter.bleCommandTrain.emit(mutableListOf(
-//                Retard(200),
-//                Connect(address = "94:B9:7E:E8:E6:C2"),
-//                Retard(1000L),
-//                EnableNotifications("94:B9:7E:E8:E6:C2", characteristicUuid = UUID.fromString(
-//                    "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-//                    //"ca73b3ba-39f6-4ab3-91ae-186dc9577d99"
-//                )),
-//            ))
-//        }
+        corScope.launch {
+            BLEStarter.bleCommandTrain.emit(mutableListOf(
+                Retard(200),
+                Connect(address = "94:B9:7E:E8:E6:C2"),
+                Retard(1000L),
+                EnableNotifications(BleDevices.EMULATOR1.address, characteristicUuid = UUID.fromString(
+                    BleDevices.EMULATOR1.uuid
+                    //"ca73b3ba-39f6-4ab3-91ae-186dc9577d99"
+                )),
+            ))
+            currentScreen.value = CHART
+        }
 
         ////////////////////////////////////
 
@@ -250,56 +255,85 @@ class MainActivity : ComponentActivity() {
             MonitoringV3Theme {
                 MissingPermissionsComponent(
                     content = {
+                        Box(Modifier.fillMaxSize()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.DarkGray)
+                                    .padding(vertical = 1.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .weight(0.95f)
+                                        .fillMaxWidth()
+                                ) {
+                                    when(currentShowingScreen) {
+                                        SCANNER -> {
+                                            BLEDeviceListScreen(
+                                                bleDevices = BLEStarter.scanDevices.collectAsState(),
+                                                onConnectClicked = {
 
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.DarkGray)
-                                .padding(vertical = 5.dp)
-                        ) {
-                            when(currentShowingScreen) {
-                                SCANNER -> {
-                                    BLEDeviceListScreen(
-                                        bleDevices = BLEStarter.scanDevices.collectAsState(),
-                                        onConnectClicked = {
+                                                    corScope.launch {
+                                                        BLEStarter.bleCommandTrain.emit(mutableListOf(
+                                                            Retard(200),
+                                                            Connect(address = it.macAddress),
+                                                            Retard(1000L),
+                                                            EnableNotifications(it.macAddress, characteristicUuid = UUID.fromString(
+                                                                BleDevices.EMULATOR1.uuid
+//                                                        BleDevices.AUTONOMOUS1.uuid
+                                                            )),
+                                                        ))
+                                                        currentScreen.value = CHART
 
-                                            corScope.launch {
-                                                BLEStarter.bleCommandTrain.emit(mutableListOf(
-                                                    Retard(200),
-                                                    Connect(address = it.macAddress),
-                                                    Retard(1000L),
-                                                    EnableNotifications(it.macAddress, characteristicUuid = UUID.fromString(
-                                                        BleDevices.AUTONOMOUS1.uuid
-//                                                        "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-                                                        //"ca73b3ba-39f6-4ab3-91ae-186dc9577d99"
-                                                    )),
-                                                ))
-                                                if (BLEStarter.isActive) {
-                                                    currentScreen.value = CHART
+                                                    }
                                                 }
-
-                                            }
+                                            )
                                         }
-                                    )
-                                }
-                                CHART -> {
-                                    ChartScreen(
-                                        items = accChangesArray, //Variables.accChangesArray,
-                                        logCat = Variables.chatCanva,
-                                        onMarkClicked = {
+                                        CHART -> {
+                                            ChartScreen(
+                                                items = accChangesArray, //Variables.accChangesArray,
+                                                logCat = Variables.chatCanva,
+                                                onMarkClicked = {
 
-                                        },
-                                        onStartClicked = {
-                                            recState.value = RecState.RECORDING_MODE
-                                            NAME_OF_LOG_FILE = getFileName()
-                                        },
-                                        onStopClicked = {
-                                            recState.value = RecState.STANDBY_MODE
+                                                },
+                                                onStartClicked = {
+                                                    recState.value = RecState.RECORDING_MODE
+                                                    NAME_OF_LOG_FILE = getFileName()
+                                                },
+                                                onStopClicked = {
+                                                    recState.value = RecState.STANDBY_MODE
+                                                }
+                                            )
                                         }
-                                    )
+                                        ANALYSIS -> {
+                                            AnalysisScreen()
+                                        }
+                                    }
                                 }
-                                ANALYSIS -> {
-                                    AnalysisScreen()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(ColorBackground1)
+                                        .weight(0.05f),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(modifier = Modifier.clickable {
+                                        currentScreen.value = SCANNER
+                                    }) {
+                                        Text("Scan", color = textWhiterColor2)
+                                    }
+                                    Box(modifier = Modifier.clickable {
+                                        currentScreen.value = CHART
+                                    }) {
+                                        Text("Measurements", color = textWhiterColor2)
+                                    }
+                                    Box(modifier = Modifier.clickable {
+                                        currentScreen.value = ANALYSIS
+                                    }) {
+                                        Text("Analysis", color = textWhiterColor2)
+                                    }
+
                                 }
                             }
                         }

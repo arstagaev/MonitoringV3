@@ -12,3 +12,7 @@ val Pink40 = Color(0xFF7D5260)
 
 
 val ColorButton1 = Color(0xFF2B2D30)
+val ColorBackground1 = Color(0xFF3C3F40)
+
+val textWhiterColor2 = Color(0xFFCFEBEF)
+

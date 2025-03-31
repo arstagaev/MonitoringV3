@@ -1,20 +1,26 @@
 package com.tagaev.myapplication.ui.screens
 
+import analysisCurrentChart
 import android.os.Environment
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.arstagaev.flowble.gentelman_kit.logInfo
+import com.tagaev.myapplication.Variables.analysisParameters
 import com.tagaev.myapplication.ui.parts.DrawChart
+import com.tagaev.myapplication.ui.theme.textWhiterColor2
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
@@ -25,6 +31,7 @@ fun AnalysisScreen() {
     var selectedFile by remember { mutableStateOf<File?>(null) }
     // Acceleration values parsed from the file (first value from each line)
     val accelerationData = remember { mutableStateListOf<Double>() }
+    val crScope = rememberCoroutineScope()
 
     // Load the list of files from the monitoring folder when this screen starts.
     LaunchedEffect(Unit) {
@@ -40,7 +47,7 @@ fun AnalysisScreen() {
 
     Column(modifier = Modifier
         .fillMaxSize()
-        .padding(16.dp)
+        .padding(horizontal = 3.dp)
         .background(Color.LightGray)) {
         Text("Select a file to parse:", modifier = Modifier.padding(bottom = 8.dp))
         LazyColumn(modifier = Modifier.weight(1f)) {
@@ -51,7 +58,9 @@ fun AnalysisScreen() {
                         .fillMaxWidth()
                         .padding(4.dp)
                         .clickable {
-                            selectedFile = file
+                            crScope.launch {
+                                selectedFile = file
+                            }
                         }
                 )
             }
@@ -76,9 +85,21 @@ fun AnalysisScreen() {
                         }
                     }
                 }
+                analysisCurrentChart(accelerationData)
             }
             // Pass the parsed acceleration data to the chart drawing function.
-            DrawChart(accelerationData = accelerationData.toList(), modifier = Modifier.fillMaxSize().weight(3f))
+            DrawChart(accelerationData = accelerationData.toList(), modifier = Modifier.fillMaxSize().weight(5f))
+            LazyRow(
+                modifier = Modifier.fillMaxSize().weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(horizontal = 6.dp)
+            ) {
+                items(analysisParameters) {
+                    Box(modifier = Modifier.background(Color.DarkGray, shape = RoundedCornerShape(10.dp)).padding(5.dp)) {
+                        Text("${it.name}\n${it.value}", color = textWhiterColor2)
+                    }
+                }
+            }
         }
     }
 }
