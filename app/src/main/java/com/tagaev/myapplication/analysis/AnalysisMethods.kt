@@ -1,6 +1,5 @@
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.tagaev.myapplication.Variables
-import com.tagaev.myapplication.Variables.accChangesArray
 import com.tagaev.myapplication.Variables.analysisParameters
 import org.jtransforms.fft.DoubleFFT_1D
 import kotlin.math.pow
@@ -41,6 +40,7 @@ fun analysisCurrentChart(accelerationData: SnapshotStateList<Double>) {
     analysisParameters.add(Variables.AnalysisBlock("Standard Deviation",accelerationData.standardDeviation()))
     analysisParameters.add(Variables.AnalysisBlock("Variance",accelerationData.variance()))
     analysisParameters.add(Variables.AnalysisBlock("Median",accelerationData.median()))
+    analysisParameters.add(Variables.AnalysisBlock("# Lines",accelerationData.size.toDouble()))
 }
 
 

@@ -494,7 +494,7 @@ class BleActions(
                 scanDevices.value = updatedList as ArrayList<ScannedDevice>
             }
 
-            logInfo("Scan result: ${BleParameters.scanResultsX.value.joinToString()}")
+            //logInfo("Scan result: ${BleParameters.scanResultsX.value.joinToString()}")
         }
     }
 

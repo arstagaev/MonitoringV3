@@ -107,18 +107,18 @@ class MainActivity : ComponentActivity() {
         }
 
         //////DEMOOO
-        corScope.launch {
-            BLEStarter.bleCommandTrain.emit(mutableListOf(
-                Retard(200),
-                Connect(address = "94:B9:7E:E8:E6:C2"),
-                Retard(1000L),
-                EnableNotifications(BleDevices.EMULATOR1.address, characteristicUuid = UUID.fromString(
-                    BleDevices.EMULATOR1.uuid
-                    //"ca73b3ba-39f6-4ab3-91ae-186dc9577d99"
-                )),
-            ))
-            currentScreen.value = CHART
-        }
+//        corScope.launch {
+//            BLEStarter.bleCommandTrain.emit(mutableListOf(
+//                Retard(200),
+//                Connect(address = "94:B9:7E:E8:E6:C2"),
+//                Retard(1000L),
+//                EnableNotifications(BleDevices.EMULATOR1.address, characteristicUuid = UUID.fromString(
+//                    BleDevices.EMULATOR1.uuid
+//                    //"ca73b3ba-39f6-4ab3-91ae-186dc9577d99"
+//                )),
+//            ))
+//            currentScreen.value = CHART
+//        }
 
         ////////////////////////////////////
 
@@ -155,8 +155,7 @@ class MainActivity : ComponentActivity() {
         }
         corScope.launch {
             BLEStarter.scanDevices.collect {
-                logWarning("What I found: ${it}")
-               //listOfBLEDevices.addAll()
+                //logWarning("What I found: ${it}")
             }
         }
 
@@ -279,8 +278,8 @@ class MainActivity : ComponentActivity() {
                                                             Connect(address = it.macAddress),
                                                             Retard(1000L),
                                                             EnableNotifications(it.macAddress, characteristicUuid = UUID.fromString(
-                                                                BleDevices.EMULATOR1.uuid
-//                                                        BleDevices.AUTONOMOUS1.uuid
+//                                                                BleDevices.EMULATOR1.uuid
+                                                        BleDevices.AUTONOMOUS1.uuid
                                                             )),
                                                         ))
                                                         currentScreen.value = CHART
