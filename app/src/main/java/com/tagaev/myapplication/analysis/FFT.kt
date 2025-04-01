@@ -13,6 +13,8 @@ import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,6 +25,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
+import com.arstagaev.flowble.gentelman_kit.logInfo
 import org.jtransforms.fft.DoubleFFT_1D
 import kotlin.math.hypot
 
@@ -97,8 +100,9 @@ fun FFTChart(
         Text("No FFT data available", modifier = modifier)
         return
     }
+    val totalBins = fftData.size
 
-    // Determine the bounds for frequency and magnitude.
+    // Determine bounds for frequency and magnitude.
     val minFreq = fftData.minOf { it.first }
     val maxFreq = fftData.maxOf { it.first }
     val minMag = fftData.minOf { it.second }
@@ -123,48 +127,54 @@ fun FFTChart(
             strokeWidth = 2f
         )
 
-        // Tick settings.
-        val tickCount = 5
-        val tickLength = 10f
-
         // Use drawIntoCanvas to draw text labels using the native canvas.
         drawIntoCanvas { canvas ->
             val textPaint = Paint().apply {
                 color = AndroidColor.BLACK
-                textSize = 30f
+                textSize = 10f
             }
             val nativeCanvas = canvas.nativeCanvas
 
-            // X axis ticks and labels.
-            for (i in 0..tickCount) {
-                val x = i * (canvasWidth / tickCount)
-                // Interpolate frequency for this tick.
-                val freq = minFreq + i * (maxFreq - minFreq) / tickCount
+            // Draw vertical grid lines for each frequency bin.
+            val totalBins = fftData.size
+            // Adjust label frequency: if too many bins, label every Nth bin.
+            val labelInterval = if (totalBins > 20) totalBins / 10 else 1
+
+            for (i in fftData.indices) {
+                // x position for this frequency bin (center of the corresponding bar)
+                val x = (i + 0.5f) * (canvasWidth / totalBins)
+                // Draw vertical grid line over the entire height.
                 drawLine(
-                    color = Color.Gray,
-                    start = Offset(x, canvasHeight),
-                    end = Offset(x, canvasHeight - tickLength),
-                    strokeWidth = 2f
+                    color = Color.LightGray,
+                    start = Offset(x, 0f),
+                    end = Offset(x, canvasHeight),
+                    strokeWidth = 1f
                 )
-                nativeCanvas.drawText(
-                    "${"%.1f".format(freq)} Hz",
-                    x - 20f,
-                    canvasHeight - 15f,
-                    textPaint
-                )
+                // Draw label at defined intervals.
+                if (i % labelInterval == 0) {
+                    val freq = fftData[i].first
+                    nativeCanvas.drawText(
+                        "${"%.1f".format(freq)} Hz",
+                        x - 20f,
+                        canvasHeight - 15f,
+                        textPaint
+                    )
+                }
             }
 
-            // Y axis ticks and labels.
-            for (i in 0..tickCount) {
-                val y = canvasHeight - i * (canvasHeight / tickCount)
-                // Interpolate magnitude for this tick.
-                val mag = minMag + i * (maxMag - minMag) / tickCount
+            // Optionally, draw horizontal grid lines for Y axis ticks.
+            val tickCountY = 5
+            val tickLength = 10f
+            for (j in 0..tickCountY) {
+                val y = canvasHeight - j * (canvasHeight / tickCountY)
+                // Draw horizontal tick.
                 drawLine(
                     color = Color.Gray,
                     start = Offset(0f, y),
                     end = Offset(tickLength, y),
                     strokeWidth = 2f
                 )
+                val mag = minMag + j * (maxMag - minMag) / tickCountY
                 nativeCanvas.drawText(
                     "${"%.2f".format(mag)}",
                     tickLength + 5f,
@@ -175,12 +185,11 @@ fun FFTChart(
         }
 
         // Draw FFT data as vertical bars.
-        // Each bar's width is computed based on the number of FFT bins.
-        val barWidth = (canvasWidth / fftData.size) * 0.8f
-        fftData.forEachIndexed { index, (frequency, magnitude) ->
-            // Center the bar horizontally.
-            val xCenter = (index + 0.5f) * (canvasWidth / fftData.size)
-            // Scale the magnitude to the canvas height.
+        val barWidth = (canvasWidth / totalBins) * 0.8f
+        fftData.forEachIndexed { index, (_, magnitude) ->
+            // Center each bar horizontally.
+            val xCenter = (index + 0.5f) * (canvasWidth / totalBins)
+            // Scale magnitude to the canvas height.
             val barHeight = if (maxMag - minMag != 0f) {
                 ((magnitude - minMag) / (maxMag - minMag)) * canvasHeight
             } else {
@@ -247,7 +256,7 @@ fun calculateFFTData(
         val nyquistFreq = sampleFreq / 2
         fftData.add(nyquistFreq to nyquistMag.toFloat())
     }
-
+    logInfo("fftData: ${fftData.joinToString()}")
     return fftData
 }
 
@@ -286,6 +295,17 @@ fun FFTAlertDialog(
                         text = "Frequency (index) vs Acceleration",
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
+                    LazyRow {
+                        items(fftData) {
+                            if (it.second > 1) {
+                                Text(
+                                    text = "${it.first} Hz",
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                )
+                            }
+
+                        }
+                    }
                 }
             }
         },
