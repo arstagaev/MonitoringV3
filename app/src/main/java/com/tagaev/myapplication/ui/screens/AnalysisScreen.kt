@@ -105,7 +105,10 @@ fun AnalysisScreen() {
         if (selectedFile != null) {
             // When a file is selected, parse it step-by-step.
             LaunchedEffect(selectedFile) {
-                showingData.clear() // reset previous data
+                // reset previous data
+                originalFileData.clear()
+                showingData.clear()
+
                 selectedFile?.bufferedReader()?.useLines { lines ->
                     lines.forEach { line ->
                         // Expected format: "9999.0;9999.0;9999.0;1743332936761"
