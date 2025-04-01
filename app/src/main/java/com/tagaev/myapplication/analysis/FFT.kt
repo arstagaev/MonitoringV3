@@ -7,7 +7,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-
+import android.graphics.Color as AndroidColor
 import android.content.Context
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 import org.jtransforms.fft.DoubleFFT_1D
@@ -97,7 +98,7 @@ fun FFTChart(
         return
     }
 
-    // Determine the frequency and magnitude bounds.
+    // Determine the bounds for frequency and magnitude.
     val minFreq = fftData.minOf { it.first }
     val maxFreq = fftData.maxOf { it.first }
     val minMag = fftData.minOf { it.second }
@@ -107,13 +108,14 @@ fun FFTChart(
         val canvasWidth = size.width
         val canvasHeight = size.height
 
-        // Draw X axis (frequency) at the bottom and Y axis (magnitude) on the left.
+        // Draw X axis (frequency) at the bottom.
         drawLine(
             color = Color.Gray,
             start = Offset(0f, canvasHeight),
             end = Offset(canvasWidth, canvasHeight),
             strokeWidth = 2f
         )
+        // Draw Y axis (magnitude) on the left.
         drawLine(
             color = Color.Gray,
             start = Offset(0f, 0f),
@@ -121,76 +123,77 @@ fun FFTChart(
             strokeWidth = 2f
         )
 
-        // Set up tick parameters.
+        // Tick settings.
         val tickCount = 5
         val tickLength = 10f
 
-        // Create a native Paint instance to draw text labels.
-        val textPaint = Paint().apply {
-            color = android.graphics.Color.BLACK
-            textSize = 30f
-        }
-        val nativeCanvas = drawContext.canvas.nativeCanvas
+        // Use drawIntoCanvas to draw text labels using the native canvas.
+        drawIntoCanvas { canvas ->
+            val textPaint = Paint().apply {
+                color = AndroidColor.BLACK
+                textSize = 30f
+            }
+            val nativeCanvas = canvas.nativeCanvas
 
-        // Draw frequency ticks (X axis)
-        for (i in 0..tickCount) {
-            val x = i * (canvasWidth / tickCount)
-            // Compute corresponding frequency value.
-            val freq = minFreq + i * (maxFreq - minFreq) / tickCount
-            drawLine(
-                color = Color.Gray,
-                start = Offset(x, canvasHeight),
-                end = Offset(x, canvasHeight - tickLength),
-                strokeWidth = 2f
-            )
-            nativeCanvas.drawText(
-                "${freq.toInt()} Hz",
-                x - 20f,
-                canvasHeight - 15f,
-                textPaint
-            )
-        }
+            // X axis ticks and labels.
+            for (i in 0..tickCount) {
+                val x = i * (canvasWidth / tickCount)
+                // Interpolate frequency for this tick.
+                val freq = minFreq + i * (maxFreq - minFreq) / tickCount
+                drawLine(
+                    color = Color.Gray,
+                    start = Offset(x, canvasHeight),
+                    end = Offset(x, canvasHeight - tickLength),
+                    strokeWidth = 2f
+                )
+                nativeCanvas.drawText(
+                    "${"%.1f".format(freq)} Hz",
+                    x - 20f,
+                    canvasHeight - 15f,
+                    textPaint
+                )
+            }
 
-        // Draw magnitude ticks (Y axis)
-        for (i in 0..tickCount) {
-            val y = canvasHeight - i * (canvasHeight / tickCount)
-            val mag = minMag + i * (maxMag - minMag) / tickCount
-            drawLine(
-                color = Color.Gray,
-                start = Offset(0f, y),
-                end = Offset(tickLength, y),
-                strokeWidth = 2f
-            )
-            nativeCanvas.drawText(
-                String.format("%.1f", mag),
-                tickLength + 5f,
-                y + 10f,
-                textPaint
-            )
+            // Y axis ticks and labels.
+            for (i in 0..tickCount) {
+                val y = canvasHeight - i * (canvasHeight / tickCount)
+                // Interpolate magnitude for this tick.
+                val mag = minMag + i * (maxMag - minMag) / tickCount
+                drawLine(
+                    color = Color.Gray,
+                    start = Offset(0f, y),
+                    end = Offset(tickLength, y),
+                    strokeWidth = 2f
+                )
+                nativeCanvas.drawText(
+                    "${"%.2f".format(mag)}",
+                    tickLength + 5f,
+                    y + 10f,
+                    textPaint
+                )
+            }
         }
-
-        // Calculate the width of each bar (with some spacing).
-        val barWidth = (canvasWidth / fftData.size) * 0.8f
 
         // Draw FFT data as vertical bars.
+        // Each bar's width is computed based on the number of FFT bins.
+        val barWidth = (canvasWidth / fftData.size) * 0.8f
         fftData.forEachIndexed { index, (frequency, magnitude) ->
-            // X position based on index.
+            // Center the bar horizontally.
             val xCenter = (index + 0.5f) * (canvasWidth / fftData.size)
-            // Map the magnitude to the canvas height.
+            // Scale the magnitude to the canvas height.
             val barHeight = if (maxMag - minMag != 0f) {
                 ((magnitude - minMag) / (maxMag - minMag)) * canvasHeight
             } else {
                 0f
             }
             drawRect(
-                color = Color.Magenta,
+                color = Color.Blue,
                 topLeft = Offset(xCenter - barWidth / 2, canvasHeight - barHeight),
                 size = Size(barWidth, barHeight)
             )
         }
     }
 }
-
 
 /**
  * Computes FFT data from the given accelerationData.
@@ -262,7 +265,7 @@ fun FFTAlertDialog(
 //        index.toFloat() to value
 //    }
 
-    val fftData = calculateFFTData(accelerationData,1f)
+    val fftData = calculateFFTData(accelerationData,100f)
 
     AlertDialog(
         onDismissRequest = onDismiss,
