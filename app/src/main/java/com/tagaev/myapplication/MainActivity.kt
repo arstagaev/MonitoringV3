@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -149,98 +150,7 @@ class MainActivity : ComponentActivity() {
 //            }
 //        }
 
-        launchLib()
-        bleStarter = BLEStarter(this@MainActivity).also {
-            it.showOperationToasts = true // show logs in Toast
-        }
-        corScope.launch {
-            BLEStarter.scanDevices.collect {
-                //logWarning("What I found: ${it}")
-            }
-        }
 
-        corScope.launch {
-            BLEStarter.outputBytesNotifyIndicate.collect {
-                logWarning("Result: ${bytesToHex(it.value!!)} ${it.value?.decodeToString()} ${BleParameters.STATE_BLE}")
-                val newData = it.value?.decodeToString()
-
-                if (recState.value == RecState.RECORDING_MODE) {
-                    newData?.let { it1 -> saveLog(it1+";${System.currentTimeMillis()}", NAME_OF_LOG_FILE) }
-                }
-
-
-                val splitedData = newData?.split(";")
-
-                val newValueZ = splitedData?.getOrNull(2)?.toDoubleOrNull()
-
-                countPacketsPerSecond.value++
-                allPackets++
-
-                if (newValueZ != null) {
-                    if (accChangesArray.size > CHART_ARRAY_SIZE) {
-                        accChangesArray.removeFirstOrNull()
-                        //chartEntryModel.entries.get(0).get(0).y
-                    }
-                    //toChartCarrier.emit(newValueZ)
-                    accChangesArray.add(newValueZ)
-
-                    //measureValueZ.value = newValueZ
-
-                    try {
-                        splitedData.getOrNull(0)?.toDoubleOrNull()?.let { measureValueX.value = it }
-                        splitedData.getOrNull(1)?.toDoubleOrNull()?.let { measureValueY.value = it }
-                        splitedData.getOrNull(2)?.toDoubleOrNull()?.let { measureValueZ.value = it }
-
-                        if (lastXAccelerations.size > MEASURMENT_ARRAY_SIZE) {
-                            lastXAccelerations.removeFirstOrNull()
-                            lastYAccelerations.removeFirstOrNull()
-                            lastZAccelerations.removeFirstOrNull()
-                        }
-
-                        lastXAccelerations.add(measureValueX.value)
-                        lastYAccelerations.add(measureValueY.value)
-                        lastZAccelerations.add(measureValueZ.value)
-
-                        // set new MAX
-                        if (measureMaxX.value < measureValueX.value) {
-                            measureMaxX.value = measureValueX.value
-                        }
-                        if (measureMaxY.value < measureValueY.value) {
-                            measureMaxY.value = measureValueY.value
-                        }
-                        if (measureMaxZ.value < measureValueZ.value) {
-                            measureMaxZ.value = measureValueZ.value
-                        }
-
-                        // set new MIN
-                        if (measureMinX.value > measureValueX.value) {
-                            measureMinX.value = measureValueX.value
-                        }
-                        if (measureMinY.value > measureValueY.value) {
-                            measureMinY.value = measureValueY.value
-                        }
-                        if (measureMinZ.value > measureValueZ.value) {
-                            measureMinZ.value = measureValueZ.value
-                        }
-
-                        measureAverageX.value = lastXAccelerations.average().toDouble()
-                        measureAverageY.value = lastYAccelerations.average().toDouble()
-                        measureAverageZ.value = lastZAccelerations.average().toDouble()
-
-
-//                                                lastYAccelerations.maxOrNull()?.let {  measureMaxY.value = it }
-//                                                lastZAccelerations.maxOrNull()?.let {  measureMaxZ.value = it }
-//
-//                                                lastXAccelerations.minOrNull()?.let {  measureMinX.value = it }
-//                                                lastYAccelerations.minOrNull()?.let {  measureMinY.value = it }
-//                                                lastZAccelerations.minOrNull()?.let {  measureMinZ.value = it }
-                    }catch (e: Exception) {
-                        println("ERROR: MainActivity: ${e.message} ")
-                    }
-                    //print("asd size: ${asd.size}")
-                }
-            }
-        }
         CoroutineScope(lifecycleScope.coroutineContext).launch(Dispatchers.IO) {
             while (lifecycleScope.coroutineContext.isActive) {
                 countPacketsPerSecond.value = 0
@@ -254,6 +164,9 @@ class MainActivity : ComponentActivity() {
             MonitoringV3Theme {
                 MissingPermissionsComponent(
                     content = {
+                        LaunchedEffect(Unit) {
+                            bleDataHandler()
+                        }
                         Box(Modifier.fillMaxSize()) {
                             Column(
                                 modifier = Modifier
@@ -342,6 +255,117 @@ class MainActivity : ComponentActivity() {
 
                     }
                 )
+            }
+        }
+    }
+
+    private fun bleDataHandler() {
+        launchLib()
+        bleStarter = BLEStarter(this@MainActivity).also {
+            it.showOperationToasts = true // show logs in Toast
+        }
+        corScope.launch {
+            BLEStarter.scanDevices.collect {
+                //logWarning("What I found: ${it}")
+            }
+        }
+        var itemsSoFar = 0
+        val startTime = System.currentTimeMillis()
+        corScope.launch {
+            //var startTime  = System.currentTimeMillis()
+            BLEStarter.outputBytesNotifyIndicate.collect {
+                itemsSoFar++
+
+                // Check elapsed time
+                val now = System.currentTimeMillis()
+                val elapsed = now - startTime
+                if (elapsed != 0L) {
+                    val itemsPerSecond = itemsSoFar * 1000 / elapsed
+                    println("Item:  => $itemsPerSecond items/sec so far")
+                }
+
+//                var now = System.currentTimeMillis()
+//                println("DIFF: ${now - startTime} long")
+//                startTime = now
+
+                logWarning("Result: ${bytesToHex(it.value!!)} ${it.value?.decodeToString()} ${BleParameters.STATE_BLE}")
+                val newData = it.value?.decodeToString()
+
+                if (recState.value == RecState.RECORDING_MODE) {
+                    newData?.let { it1 -> saveLog(it1+";${System.currentTimeMillis()}", NAME_OF_LOG_FILE) }
+                }
+
+
+                val splitedData = newData?.split(";")
+
+                val newValueZ = splitedData?.getOrNull(2)?.toDoubleOrNull()
+
+                countPacketsPerSecond.value++
+                allPackets++
+
+                if (newValueZ != null) {
+                    if (accChangesArray.size > CHART_ARRAY_SIZE) {
+                        accChangesArray.removeFirstOrNull()
+                        //chartEntryModel.entries.get(0).get(0).y
+                    }
+                    //toChartCarrier.emit(newValueZ)
+                    accChangesArray.add(newValueZ)
+
+                    //measureValueZ.value = newValueZ
+
+                    try {
+                        splitedData.getOrNull(0)?.toDoubleOrNull()?.let { measureValueX.value = it }
+                        splitedData.getOrNull(1)?.toDoubleOrNull()?.let { measureValueY.value = it }
+                        splitedData.getOrNull(2)?.toDoubleOrNull()?.let { measureValueZ.value = it }
+
+                        if (lastXAccelerations.size > MEASURMENT_ARRAY_SIZE) {
+                            lastXAccelerations.removeFirstOrNull()
+                            lastYAccelerations.removeFirstOrNull()
+                            lastZAccelerations.removeFirstOrNull()
+                        }
+
+                        lastXAccelerations.add(measureValueX.value)
+                        lastYAccelerations.add(measureValueY.value)
+                        lastZAccelerations.add(measureValueZ.value)
+
+                        // set new MAX
+                        if (measureMaxX.value < measureValueX.value) {
+                            measureMaxX.value = measureValueX.value
+                        }
+                        if (measureMaxY.value < measureValueY.value) {
+                            measureMaxY.value = measureValueY.value
+                        }
+                        if (measureMaxZ.value < measureValueZ.value) {
+                            measureMaxZ.value = measureValueZ.value
+                        }
+
+                        // set new MIN
+                        if (measureMinX.value > measureValueX.value) {
+                            measureMinX.value = measureValueX.value
+                        }
+                        if (measureMinY.value > measureValueY.value) {
+                            measureMinY.value = measureValueY.value
+                        }
+                        if (measureMinZ.value > measureValueZ.value) {
+                            measureMinZ.value = measureValueZ.value
+                        }
+
+                        measureAverageX.value = lastXAccelerations.average().toDouble()
+                        measureAverageY.value = lastYAccelerations.average().toDouble()
+                        measureAverageZ.value = lastZAccelerations.average().toDouble()
+
+
+//                                                lastYAccelerations.maxOrNull()?.let {  measureMaxY.value = it }
+//                                                lastZAccelerations.maxOrNull()?.let {  measureMaxZ.value = it }
+//
+//                                                lastXAccelerations.minOrNull()?.let {  measureMinX.value = it }
+//                                                lastYAccelerations.minOrNull()?.let {  measureMinY.value = it }
+//                                                lastZAccelerations.minOrNull()?.let {  measureMinZ.value = it }
+                    }catch (e: Exception) {
+                        println("ERROR: MainActivity: ${e.message} ")
+                    }
+                    //print("asd size: ${asd.size}")
+                }
             }
         }
     }

@@ -28,23 +28,23 @@ fun MissingPermissionsComponent(
     onResult: (Boolean) -> Unit
 ) {
     var indexOfPermission = 0
-    var permissions = listOf<String>(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-    )
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // 4.
-        permissions = permissions.plus(
-            listOf(
+
+
+    val permissionsState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        rememberMultiplePermissionsState(
+            permissions = listOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT,
-//                Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+
+    //                Manifest.permission.MANAGE_EXTERNAL_STORAGE,
 
 
             ),
         )
+    } else {
+        TODO("VERSION.SDK_INT < S")
     }
-    val permissionsState = rememberMultiplePermissionsState(
-        permissions = permissions,
-    )
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
         onResult
@@ -54,6 +54,7 @@ fun MissingPermissionsComponent(
 
 
     if (permissionsState.allPermissionsGranted) {
+        println("ALL PERMISSION GRANTED")
         content()
     } else {
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
